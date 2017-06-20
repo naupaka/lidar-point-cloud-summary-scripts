@@ -1,4 +1,4 @@
-# Small R script to play with LiDAR loint cloud data
+# Small R script to play with LiDAR point cloud data
 
 Example data file from the National Ecological Observatory Network
 
