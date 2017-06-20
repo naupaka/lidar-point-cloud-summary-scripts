@@ -22,6 +22,7 @@ if (!require("dplyr")) {
 }
 
 lidar_in <- readLAS("data/2013_SJER_1_252000_4103000_colorized.laz")
+plot(lidar_in)
 
 lidar_data <- lidar_in@data
 
@@ -36,27 +37,36 @@ diff(range(lidar_data$X))
 diff(range(lidar_data$Y))
 diff(range(lidar_data$Z))
 
-lidar_binned <- lidar_data %>%
-  mutate(X_bins = cut(X, breaks = seq(min(lidar_data$X), 
-                                      max(lidar_data$X), 
-                                      by = 10))) %>%
-  mutate(Y_bins = cut(Y, breaks = seq(min(lidar_data$Y), 
-                                      max(lidar_data$Y), 
-                                      by = 10))) %>%
-  group_by(X_bins, Y_bins) %>%
-  summarize(max_Z = max(Z),
-            min_Z = min(Z),
-            mean_Z = mean(Z, na.rm = TRUE),
-            range_Z = diff(range(Z))) %>%
-  na.omit() %>%
-  ungroup()
-  
 
+all_data <- matrix(NA, 0, 9)
+for (bin_sizes in seq(5, 100, by = 5)) {
+  my_lidar_binned <- lidar_data %>%
+    mutate(X_bins = cut(X, breaks = seq(min(lidar_data$X), 
+                                        max(lidar_data$X), 
+                                        by = bin_sizes))) %>%
+    mutate(Y_bins = cut(Y, breaks = seq(min(lidar_data$Y), 
+                                        max(lidar_data$Y), 
+                                        by = bin_sizes))) %>%
+    group_by(X_bins, Y_bins) %>%
+    summarize(max_Z = max(Z),
+              min_Z = min(Z),
+              mean_Z = mean(Z, na.rm = TRUE),
+              range_Z = diff(range(Z)),
+              count_Z = n(),
+              sd_Z = sd(Z)) %>%
+    na.omit() %>%
+    mutate(bin_size = bin_sizes)
+  my_lidar_binned <- as.matrix(my_lidar_binned)
+  all_data <- rbind(all_data, my_lidar_binned)
+} 
+all_data <- as.data.frame(all_data)
 
-
-hist(lidar_data$X)
-hist(lidar_data$Y)
-hist(lidar_data$Z)
-
-ggplot(lidar_data, aes(x = X_bins, y = Y_bins, color = Z)) +
-  geom_density2d()
+all_data %>%
+  group_by(bin_size) %>%
+  summarize(avg_mean_Z = mean(as.numeric(as.character(mean_Z)), na.rm = TRUE),
+            avg_min_Z = mean(as.numeric(as.character(min_Z))),
+            avg_max_Z = mean(as.numeric(as.character(max_Z))),
+            avg_range_Z = mean(as.numeric(as.character(range_Z))),
+            avg_sd_Z = mean(as.numeric(as.character(sd_Z))),
+            avg_count_Z = mean(as.numeric(as.character(count_Z, na.rm = TRUE)))) %>%
+  arrange(as.numeric(as.character(bin_size)))
