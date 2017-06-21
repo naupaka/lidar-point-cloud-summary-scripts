@@ -7,22 +7,17 @@
 if (!require("lidR")) {
   install.packages("lidR")
   install.packages("devtools")
+  devtools::install_github("Jean-Romain/lidR", dependencies = TRUE)
   devtools::install_github("Jean-Romain/rlas", dependencies = TRUE)
   library("lidR")
 }
 
-if (!require("ggplot2")) {
-  install.packages("ggplot2")
-  library("ggplot2")
-}
-
-if (!require("dplyr")) {
-  install.packages("dplyr")
-  library("dplyr")
-}
-
 lidar_in <- readLAS("data/2013_SJER_1_256000_4112000_colorized.laz")
-plot(lidar_in)
+dtm = grid_terrain(lidar_in, res = 5, method = "knnidw")
+lasnorm <- lasnormalize(lidar_in, dtm)
+lasnorm@data$Z[lasnorm@data$Z < 0] <- 0
+normalized_metrics <- lasnorm %>% grid_metrics(.stdmetrics, res = 1)
 
-hmean <- lidar_in %>% grid_metrics(entropy(Z), res = 10)
-plot(hmean)
+plot(lasnorm)
+
+plot(entropy)
